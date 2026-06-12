@@ -3,8 +3,9 @@ import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
 import type { JwtUserPayload } from "../types/auth.types.js";
 import { pool } from "../db/index.js";
+import type { ROLES } from "../types/roles.types.js";
 
-const verifyToken = () => {
+const verifyToken = (...roles: ROLES[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.headers.authorization;
@@ -42,6 +43,12 @@ const verifyToken = () => {
         });
       }
       // CHECK USER ROLE HERE LATER
+      if (!roles.includes(user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "Forbidden access.",
+        });
+      }
 
       req.user = {
         id: user.id,

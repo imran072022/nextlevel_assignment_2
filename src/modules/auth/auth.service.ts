@@ -41,7 +41,6 @@ const loginUser = async (payload: loginInfo) => {
   if (userData.rowCount === 0) {
     throw new Error("This email is not registered!");
   }
-  console.log(userData);
   const user = userData.rows[0];
   // check if password matches
   const passwordMatches = await bcrypt.compare(password, user.password);
