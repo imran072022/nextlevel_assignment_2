@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service.js";
+import type { IssueQuery } from "../../types/filtering.types.js";
 
+// create an issue
 const createIssue = async (req: Request, res: Response) => {
   try {
     const createdIssue = await issueService.createIssueToDB(req.body, req.user);
@@ -27,6 +29,51 @@ const createIssue = async (req: Request, res: Response) => {
     });
   }
 };
+
+// get all issues
+const getAllIssues = async (req: Request, res: Response) => {
+  try {
+    const validSort = ["newest", "oldest"];
+    const validType = ["bug", "feature_request"];
+    const validStatus = ["open", "in_progress", "resolved"];
+    const { sort, type, status } = req.query;
+
+    if (sort && !validSort.includes(sort as string)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid sort value",
+      });
+    }
+    if (type && !validType.includes(type as string)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid type value",
+      });
+    }
+    if (status && !validStatus.includes(status as string)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
+    const responseData = await issueService.getAllIssuesFromDB(req.query);
+
+    return res.status(200).json({
+      success: true,
+      message: "Issues retrieved successfully",
+      data: responseData,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
+};
+
 export const issueController = {
   createIssue,
+  getAllIssues,
 };
