@@ -1,4 +1,5 @@
 import { pool } from "../../db/index.js";
+import { AppError } from "../../errors/appError.js";
 import type { JwtUserPayload } from "../../types/auth.types.js";
 
 type SubmittedIssues = {
@@ -139,7 +140,7 @@ const updateIssueInDB = async (
   );
 
   if (issueResult.rowCount === 0) {
-    throw new Error("Issue not found");
+    throw new AppError(404, "Issue not found.");
   }
   const issue = issueResult.rows[0];
   const maintainer = user.role === "maintainer";
@@ -149,7 +150,7 @@ const updateIssueInDB = async (
     issue.status === "open";
 
   if (!maintainer && !authorizedContributor) {
-    throw new Error("Forbidden Access");
+    throw new AppError(403, "Forbidden access.");
   }
 
   const updatedResult = await pool.query(
@@ -161,10 +162,6 @@ const updateIssueInDB = async (
   `,
     [id, title, description, type],
   );
-  console.log(updatedResult);
-  if (updatedResult.rowCount === 0) {
-    throw new Error("Issue not found.");
-  }
   const updatedIssue = updatedResult.rows[0];
   return updatedIssue;
 };
