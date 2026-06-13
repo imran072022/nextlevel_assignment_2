@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service.js";
-import type { IssueQuery } from "../../types/filtering.types.js";
 
 // create an issue
 const createIssue = async (req: Request, res: Response) => {
@@ -115,8 +114,38 @@ const getSingleIssue = async (req: Request, res: Response) => {
   }
 };
 
+// update an issue
+const updateIssue = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+    if (typeof id !== "string") {
+      return res.status(404).json({
+        message: "ID is missing/Invalid",
+      });
+    }
+    const updatedIssue = await issueService.updateIssueInDB(
+      id,
+      req.body,
+      req.user,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Issue update successfully",
+      data: updatedIssue,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
+};
+
 export const issueController = {
   createIssue,
   getAllIssues,
   getSingleIssue,
+  updateIssue,
 };

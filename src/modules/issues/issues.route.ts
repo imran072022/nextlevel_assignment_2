@@ -13,4 +13,9 @@ router.post(
 
 router.get("/", issueController.getAllIssues);
 router.get("/:id", issueController.getSingleIssue);
+router.patch(
+  "/:id",
+  verifyToken("maintainer", "contributor"),
+  issueController.updateIssue,
+);
 export const issueRoute = router;

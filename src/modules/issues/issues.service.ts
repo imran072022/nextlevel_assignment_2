@@ -1,8 +1,13 @@
 import { pool } from "../../db/index.js";
 import type { JwtUserPayload } from "../../types/auth.types.js";
-import type { IssueQuery } from "../../types/filtering.types.js";
 
 type SubmittedIssues = {
+  title: string;
+  description: string;
+  type: string;
+};
+type Params = { id: string };
+type UpdatedInfo = {
   title: string;
   description: string;
   type: string;
@@ -118,8 +123,55 @@ const getSingleIssueFromDB = async (params: any) => {
     updated_at: issue.updated_at,
   };
 };
+
+const updateIssueInDB = async (
+  id: string,
+  payload: UpdatedInfo,
+  user: JwtUserPayload,
+) => {
+  const { title, description, type } = payload;
+
+  const issueResult = await pool.query(
+    `
+    SELECT * FROM issues WHERE id = $1
+    `,
+    [id],
+  );
+
+  if (issueResult.rowCount === 0) {
+    throw new Error("Issue not found");
+  }
+  const issue = issueResult.rows[0];
+  const maintainer = user.role === "maintainer";
+  const authorizedContributor =
+    user.role === "contributor" &&
+    user.id === issue.reporter_id &&
+    issue.status === "open";
+
+  if (!maintainer && !authorizedContributor) {
+    throw new Error("Forbidden Access");
+  }
+
+  const updatedResult = await pool.query(
+    `
+  UPDATE issues SET
+  title = COALESCE($2, title), description = COALESCE($3, description), type = COALESCE($4, type)
+  WHERE id = $1
+  RETURNING *
+  `,
+    [id, title, description, type],
+  );
+  console.log(updatedResult);
+  if (updatedResult.rowCount === 0) {
+    throw new Error("Issue not found.");
+  }
+  const updatedIssue = updatedResult.rows[0];
+  return updatedIssue;
+};
+
 export const issueService = {
   createIssueToDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
+  updateIssueInDB,
 };
