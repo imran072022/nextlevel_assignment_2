@@ -73,7 +73,50 @@ const getAllIssues = async (req: Request, res: Response) => {
   }
 };
 
+// get single issue
+const getSingleIssue = async (req: Request, res: Response) => {
+  try {
+    const issue = await issueService.getSingleIssueFromDB(req.params);
+    const {
+      id,
+      title,
+      description,
+      type,
+      status,
+      reporter: { id: reporterId, name: reporterName, role: reporterRole },
+      created_at,
+      updated_at,
+    } = issue;
+    console.log(issue);
+    res.status(500).json({
+      success: true,
+      message: "Issue retrieved successfully",
+      data: {
+        id,
+        title,
+        description,
+        type,
+        status,
+        reporter: {
+          id: reporterId,
+          name: reporterName,
+          role: reporterRole,
+        },
+        created_at,
+        updated_at,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      error: error,
+    });
+  }
+};
+
 export const issueController = {
   createIssue,
   getAllIssues,
+  getSingleIssue,
 };
