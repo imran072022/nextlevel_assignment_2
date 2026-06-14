@@ -6,6 +6,7 @@ type SubmittedIssues = {
   title: string;
   description: string;
   type: string;
+  status?: "open" | "in_progress" | "resolved";
 };
 type UpdatedInfo = {
   title: string;
@@ -16,15 +17,16 @@ const createIssueToDB = async (
   payload: SubmittedIssues,
   userInfo: JwtUserPayload,
 ) => {
-  const { title, description, type } = payload;
+  const { title, description, type, status } = payload;
+  const safeStatus = status ?? "open";
   const { id: reporter_id } = userInfo;
   const result = await pool.query(
     `
-        INSERT INTO issues(title, description, type, reporter_id)
-        VALUES($1, $2, $3, $4)
+        INSERT INTO issues(title, description, type, reporter_id, status)
+        VALUES($1, $2, $3, $4, $5)
         RETURNING *
         `,
-    [title, description, type, reporter_id],
+    [title, description, type, reporter_id, safeStatus],
   );
   return result.rows[0];
 };
