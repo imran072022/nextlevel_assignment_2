@@ -1,5 +1,5 @@
 import { pool } from "../../db/index.js";
-import { AppError } from "../../errors/appError.js";
+import { AppError } from "../../errors/AppError.js";
 import type { JwtUserPayload } from "../../types/auth.types.js";
 
 type SubmittedIssues = {
@@ -7,7 +7,6 @@ type SubmittedIssues = {
   description: string;
   type: string;
 };
-type Params = { id: string };
 type UpdatedInfo = {
   title: string;
   description: string;
@@ -93,8 +92,7 @@ const getAllIssuesFromDB = async (query: any) => {
   return issuesWithReporters;
 };
 
-const getSingleIssueFromDB = async (params: any) => {
-  const { id } = params;
+const getSingleIssueFromDB = async (id: number) => {
   const issueResult = await pool.query(
     `
   SELECT i.id, i.title, i.description, i.type, i.status, i.created_at, i.updated_at,
@@ -104,29 +102,13 @@ const getSingleIssueFromDB = async (params: any) => {
     [id],
   );
   if (issueResult.rowCount === 0) {
-    throw new Error("Issue not found!");
+    throw new AppError(404, "Issue not found!");
   }
-
-  const issue = issueResult.rows[0];
-
-  return {
-    id: issue.id,
-    title: issue.title,
-    description: issue.description,
-    type: issue.type,
-    status: issue.status,
-    reporter: {
-      id: issue.reporter_id,
-      name: issue.reporter_name,
-      role: issue.reporter_role,
-    },
-    created_at: issue.created_at,
-    updated_at: issue.updated_at,
-  };
+  return issueResult.rows[0];
 };
 
 const updateIssueInDB = async (
-  id: string,
+  id: number,
   payload: UpdatedInfo,
   user: JwtUserPayload,
 ) => {
@@ -165,10 +147,23 @@ const updateIssueInDB = async (
   const updatedIssue = updatedResult.rows[0];
   return updatedIssue;
 };
+const deleteIssueFromDB = async (id: number) => {
+  const deletedIssueResult = await pool.query(
+    `
+  DELETE FROM issues WHERE id = $1
+  RETURNING *
+  `,
+    [id],
+  );
+  if (deletedIssueResult.rowCount === 0) {
+    throw new AppError(404, "Issue not found.");
+  }
+};
 
 export const issueService = {
   createIssueToDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
   updateIssueInDB,
+  deleteIssueFromDB,
 };

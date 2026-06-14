@@ -1,12 +1,12 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { authService } from "./auth.service.js";
+import sendResponse from "../../utils/sendResponse.js";
 
-const signup = async (req: Request, res: Response) => {
+const signup = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await authService.signupUser(req.body);
-    console.log(result);
-    return res.status(201).json({
-      success: true,
+    return sendResponse(res, {
+      statusCode: 201,
       message: "User registered successfully",
       data: {
         id: result.id,
@@ -17,21 +17,17 @@ const signup = async (req: Request, res: Response) => {
         updated_at: result.updated_at,
       },
     });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const login = async (req: Request, res: Response) => {
+const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await authService.loginUser(req.body);
     const { accessToken, user } = result;
-    res.status(200).json({
-      success: true,
+    return sendResponse(res, {
+      statusCode: 200,
       message: "Login successful",
       data: {
         token: accessToken,
@@ -45,12 +41,8 @@ const login = async (req: Request, res: Response) => {
         },
       },
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 

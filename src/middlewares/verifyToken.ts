@@ -42,7 +42,7 @@ const verifyToken = (...roles: ROLES[]) => {
           message: "User not exists",
         });
       }
-      // CHECK USER ROLE HERE LATER
+
       if (!roles.includes(user.role)) {
         return res.status(403).json({
           success: false,

@@ -1,13 +1,14 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { issueService } from "./issues.service.js";
+import { error } from "node:console";
+import sendResponse from "../../utils/sendResponse.js";
 
 // create an issue
-const createIssue = async (req: Request, res: Response) => {
+const createIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const createdIssue = await issueService.createIssueToDB(req.body, req.user);
-
-    return res.status(201).json({
-      success: true,
+    return sendResponse(res, {
+      statusCode: 201,
       message: "Issue created successfully",
       data: {
         id: createdIssue.id,
@@ -20,17 +21,17 @@ const createIssue = async (req: Request, res: Response) => {
         updated_at: createdIssue.updated_at,
       },
     });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
 // get all issues
-const getAllIssues = async (req: Request, res: Response) => {
+const getAllIssues = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const validSort = ["newest", "oldest"];
     const validType = ["bug", "feature_request"];
@@ -57,89 +58,97 @@ const getAllIssues = async (req: Request, res: Response) => {
     }
 
     const responseData = await issueService.getAllIssuesFromDB(req.query);
-
-    return res.status(200).json({
-      success: true,
+    return sendResponse(res, {
+      statusCode: 200,
       message: "Issues retrieved successfully",
       data: responseData,
     });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
 // get single issue
-const getSingleIssue = async (req: Request, res: Response) => {
+const getSingleIssue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(404).json({
+      success: false,
+      message: "Invalid ID",
+    });
+  }
   try {
-    const issue = await issueService.getSingleIssueFromDB(req.params);
-    const {
-      id,
-      title,
-      description,
-      type,
-      status,
-      reporter: { id: reporterId, name: reporterName, role: reporterRole },
-      created_at,
-      updated_at,
-    } = issue;
-    console.log(issue);
-    res.status(500).json({
-      success: true,
+    const issue = await issueService.getSingleIssueFromDB(id);
+    return sendResponse(res, {
+      statusCode: 200,
       message: "Issue retrieved successfully",
       data: {
-        id,
-        title,
-        description,
-        type,
-        status,
+        id: issue.id,
+        title: issue.title,
+        description: issue.description,
+        type: issue.type,
+        status: issue.status,
         reporter: {
-          id: reporterId,
-          name: reporterName,
-          role: reporterRole,
+          id: issue.reporter_id,
+          name: issue.reporter_name,
+          role: issue.reporter_role,
         },
-        created_at,
-        updated_at,
+        created_at: issue.created_at,
+        updated_at: issue.updated_at,
       },
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      error: error,
-    });
+    next(error);
   }
 };
 
 // update an issue
-const updateIssue = async (req: Request, res: Response) => {
+const updateIssue = async (req: Request, res: Response, next: NextFunction) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(404).json({
+      success: false,
+      message: "Invalid ID",
+    });
+  }
   try {
-    const id = req.params.id;
-    if (typeof id !== "string") {
-      return res.status(404).json({
-        message: "ID is missing/Invalid",
-      });
-    }
     const updatedIssue = await issueService.updateIssueInDB(
       id,
       req.body,
       req.user,
     );
 
-    res.status(200).json({
-      success: true,
+    return sendResponse(res, {
+      statusCode: 200,
       message: "Issue updated successfully",
       data: updatedIssue,
     });
-  } catch (error: any) {
-    res.status(error.statusCode || 500).json({
+  } catch (error) {
+    next(error);
+  }
+};
+
+// delete an issue
+const deleteIssue = async (req: Request, res: Response, next: NextFunction) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(404).json({
       success: false,
-      message: error.message,
-      error: error,
+      message: "Invalid ID",
     });
+  }
+  try {
+    await issueService.deleteIssueFromDB(id);
+    return sendResponse(res, {
+      statusCode: 200,
+      message: "Issue deleted successfully",
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -148,4 +157,5 @@ export const issueController = {
   getAllIssues,
   getSingleIssue,
   updateIssue,
+  deleteIssue,
 };

@@ -3,6 +3,7 @@ import { pool } from "../../db/index.js";
 import type { JwtUserPayload } from "../../types/auth.types.js";
 import jwt from "jsonwebtoken";
 import { config } from "../../config/index.js";
+import { AppError } from "../../errors/AppError.js";
 
 type SignupInfo = {
   name: string;
@@ -39,13 +40,13 @@ const loginUser = async (payload: loginInfo) => {
     [email],
   );
   if (userData.rowCount === 0) {
-    throw new Error("This email is not registered!");
+    throw new AppError(404, "This email is not registered!");
   }
   const user = userData.rows[0];
   // check if password matches
   const passwordMatches = await bcrypt.compare(password, user.password);
   if (!passwordMatches) {
-    throw new Error("Invalid password!");
+    throw new AppError(401, "Invalid password!");
   }
   const jwtPayload: JwtUserPayload = {
     id: user.id,
